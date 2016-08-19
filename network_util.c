@@ -39,7 +39,7 @@ FullSocket get_socket(struct addrinfo *address) {
   }
   FullSocket socket_result;
   socket_result.socket_id = socket_id;
-  socket_result.address = *address; 
+  socket_result.address = *address;
   return socket_result;
 }
 
@@ -115,7 +115,7 @@ ConnectionSocket full_accept(FullSocket *full_socket) {
                              (struct sockaddr *) &connection.socket_address,
                              &connection.address_size);
   if (connection_id < 0) {
-    perror("Accept error");    
+    perror("Accept error");
   }
   connection.socket_id = connection_id;
   connection.parent = full_socket;
@@ -128,7 +128,7 @@ ConnectionSocket listen_connect(FullSocket *full_socket, int backlog) {
     ConnectionSocket fake;
     fake.socket_id = -1;
     return fake;
-  } 
+  }
   return full_accept(full_socket);
 }
 
@@ -139,4 +139,83 @@ int connection_send(ConnectionSocket *connection, const void *message,
     perror("Send error");
   }
   return sent;
+}
+
+int send_all(ConnectionSocket *connection, const void *message,
+             int message_length) {
+  int total_sent = 0;
+  int sent;
+  while (total_sent < message_length) {
+    sent = connection_send(connection, message, message_length);
+    if (sent < 0){
+      total_sent = -1;
+      break;
+    }
+    total_sent += sent;
+    message += sent;
+    message_length -= sent;
+  }
+  if (total_sent < message_length) {
+    fprintf(stderr, "Sendall error: whole message not sent\n");
+    return -1;
+  }
+  return total_sent;
+}
+
+int connection_receive(ConnectionSocket *connection, void *memory, int length) {
+  int total_received = recv(connection->socket_id, memory, length, 0);
+  if (total_received < 0) {
+    perror("Receive error");
+  }
+  return total_received;
+}
+
+int receive_all(ConnectionSocket *connection, void **result) {
+  int buffer_size = 400;
+  int received_messages = 0;
+  int array_capacity = 5;
+  void **data = malloc(sizeof(void *) * array_capacity);
+  size_t *message_lengths = malloc(sizeof(size_t) * array_capacity);
+  void *current_buffer = malloc(buffer_size);
+  int received;
+  while (true) {
+    received = connection_receive(connection, current_buffer, buffer_size);
+    if (received < 1) {
+      // Closed or errored
+      free(current_buffer);
+      break;
+    }
+    if (received_messages >= array_capacity) {
+      array_capacity *= 2;
+      void **data_realloc = realloc(data, array_capacity * sizeof(void *));
+      size_t *lengths_realloc = realloc(message_lengths, array_capacity * sizeof(size_t));
+      if (data_realloc == NULL || lengths_realloc == NULL) {
+        perror("Realloc error");
+        free(current_buffer);
+        break;
+      }
+      data = data_realloc;
+      message_lengths = lengths_realloc;
+    }
+    data[received_messages] = current_buffer;
+    message_lengths[received_messages] = received;
+    received_messages += 1;
+    current_buffer = malloc(buffer_size);
+  }
+
+  int final_length = 0;
+  for (int i = 0; i < received_messages; i++) {
+    final_length += message_lengths[i];
+  }
+  void *built_result = malloc(final_length);
+  void *intermediate_result = built_result;
+  for (int i = 0; i < received_messages; i++) {
+    memcpy(intermediate_result, data[i], message_lengths[i]);
+    intermediate_result += message_lengths[i];
+    free(data[i]);
+  }
+  free(data);
+  free(message_lengths);
+  *result = built_result;
+  return final_length;
 }

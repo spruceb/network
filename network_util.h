@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -55,6 +56,13 @@ ConnectionSocket listen_connect(FullSocket *full_socket, int backlog);
 
 int connection_send(ConnectionSocket *connection, const void *message,
                     int message_length);
+
+int send_all(ConnectionSocket *connection, const void *message,
+             int message_length);
+
+int connection_receive(ConnectionSocket *connection, void *memory, int length);
+
+int receive_all(ConnectionSocket *connection, void **result);
 
 // End FullSocket definition
 
