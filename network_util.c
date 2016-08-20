@@ -172,10 +172,8 @@ int connection_receive(ConnectionSocket *connection, void *memory, int length) {
 
 int receive_all(ConnectionSocket *connection, void **result) {
   int buffer_size = 400;
-  int received_messages = 0;
-  int array_capacity = 1;
-  void **data = malloc(sizeof(void *) * array_capacity);
-  size_t *message_lengths = malloc(sizeof(size_t) * array_capacity);
+  data_vector data = new_data_vector(0);
+  size_t_vector message_lengths = new_size_t_vector(0);
   void *current_buffer = malloc(buffer_size);
   int received;
   while (true) {
@@ -185,37 +183,23 @@ int receive_all(ConnectionSocket *connection, void **result) {
       free(current_buffer);
       break;
     }
-    if (received_messages >= array_capacity) {
-      array_capacity *= 2;
-      void **data_realloc = realloc(data, array_capacity * sizeof(void *));
-      size_t *lengths_realloc = realloc(message_lengths, array_capacity * sizeof(size_t));
-      if (data_realloc == NULL || lengths_realloc == NULL) {
-        perror("Realloc error");
-        free(current_buffer);
-        break;
-      }
-      data = data_realloc;
-      message_lengths = lengths_realloc;
-    }
-    data[received_messages] = current_buffer;
-    message_lengths[received_messages] = received;
-    received_messages += 1;
+    append(&data, current_buffer);
+    append(&message_lengths, received);
     current_buffer = malloc(buffer_size);
   }
-
   int final_length = 0;
-  for (int i = 0; i < received_messages; i++) {
-    final_length += message_lengths[i];
+  for (int i = 0; i < message_lengths.length; i++) {
+    final_length += get(&message_lengths, i);
   }
   void *built_result = malloc(final_length);
   void *intermediate_result = built_result;
-  for (int i = 0; i < received_messages; i++) {
-    memcpy(intermediate_result, data[i], message_lengths[i]);
-    intermediate_result += message_lengths[i];
-    free(data[i]);
+  for (int i = 0; i < data.length; i++) {
+    memcpy(intermediate_result, get(&data, i), get(&message_lengths, i));
+    intermediate_result += get(&message_lengths, i);
+    free(get(&data, i));
   }
-  free(data);
-  free(message_lengths);
+  free(data.data);
+  free(message_lengths.data);
   *result = built_result;
   return final_length;
 }

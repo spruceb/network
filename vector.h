@@ -2,59 +2,63 @@
 #define _VECTOR_H_
 
 #include <stdio.h>
+#include <stdlib.h>
 
-#define DEFINE_VECTOR(T)                                                \
+#define DEFINE_VECTOR_HEADER(T, N)                                      \
+                                                                        \
   typedef struct {                                                      \
     T *data;                                                            \
     size_t length;                                                      \
     size_t capacity;                                                    \
-  } ##T_vector;                                                         \
+  } N##_vector;                                                         \
                                                                         \
-  ##T_vector new_##T_vector(size_t length) {                            \
-    ##T_vector new_vec;                                                 \
-    new_vec.data = malloc(sizeof(T) * length);                          \
-    new_vec.length = length;                                            \
-    new_vec.capacity = length;                                          \
-  }                                                                     \
+  N##_vector new_##N##_vector(size_t length);                           \
                                                                         \
-  T get_##T(##T_vector *vector, int index) {                            \
-    if (index >= vector->length || (-index) > vector->length) {         \
-      fprintf(stderr,                                                   \
-            "Index %d is out of array bounds (length %d)",              \
-            index, vector->length);                                     \
-      return *(vector->data);                                           \
-    }                                                                   \
-    if (index >= 0) {                                                   \
-      return vector->data[index];                                       \
-    } else {                                                            \
-      return vector->data[vector->length + index];                      \
-    }                                                                   \
-  }                                                                     \
+  T get_##N(N##_vector *vector, int index);                             \
                                                                         \
-  void set_##T(##T_vector *vector, int index, T value) {                \
-    if (index >= vector->length || (-index) > vector->length) {         \
-      fprintf(stderr,                                                   \
-            "Index %d is out of array bounds (length %d)",              \
-              index, vector->length);                                   \
-      return;                                                           \
-    }                                                                   \
-    if (index >= 0) {                                                   \
-      vector->data[index] = value;                                      \
-    } else {                                                            \
-      vector->data[vector->length - index] = value;                     \
-    }                                                                   \
-  }                                                                     \
+  void set_##N(N##_vector *vector, int index, T value);                 \
                                                                         \
+  void append_##N(N##_vector *vector, T value);
+
+DEFINE_VECTOR_HEADER(int, int)
+DEFINE_VECTOR_HEADER(char *, string)
+DEFINE_VECTOR_HEADER(double, double)
+DEFINE_VECTOR_HEADER(float, float)
+DEFINE_VECTOR_HEADER(void *, data)
+DEFINE_VECTOR_HEADER(char, char)
+DEFINE_VECTOR_HEADER(size_t, size_t)
+
+#define get(X, I) _Generic((X),                                         \
+                           int_vector *: get_int,                       \
+                           string_vector *: get_string,                 \
+                           double_vector *: get_double,                 \
+                           float_vector *: get_float,                   \
+                           data_vector *: get_data,                     \
+                           char_vector *: get_char,                     \
+                           size_t_vector *: get_size_t,                 \
+                           default: get_int                             \
+                           )(X, I)                                      \
 
 
+#define set(X, I, V) _Generic((X),                                      \
+                               int_vector *: set_int,                   \
+                               string_vector *: set_string,             \
+                               double_vector *: set_double,             \
+                               float_vector *: set_float,               \
+                               data_vector *: set_data,                 \
+                               char_vector *: set_char,                 \
+                               size_t_vector *: set_size_t              \
+                               )(X, I, V)
 
 
-
-
-
-
-
-
-
+#define append(X, V) _Generic((X),                                      \
+               int_vector *: append_int,                                \
+               string_vector *: append_string,                          \
+               double_vector *: append_double,                          \
+               float_vector *: append_float,                            \
+               data_vector *: append_data,                              \
+               char_vector *: append_char,                              \
+               size_t_vector *: append_size_t                           \
+                               )(X, V)
 
 #endif

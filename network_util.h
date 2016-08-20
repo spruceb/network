@@ -13,6 +13,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include "vector.h"
+
 
 struct addrinfo* get_hint();
 
@@ -65,6 +67,5 @@ int connection_receive(ConnectionSocket *connection, void *memory, int length);
 int receive_all(ConnectionSocket *connection, void **result);
 
 // End FullSocket definition
-
 
 #endif
