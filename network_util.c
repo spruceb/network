@@ -203,3 +203,16 @@ int receive_all(ConnectionSocket *connection, void **result) {
   *result = built_result;
   return final_length;
 }
+
+int send_string(ConnectionSocket *connection, char* string) {
+  int length = strlen(string) + 1; // 1 for null terminator
+  return send_all(connection, string, length);
+}
+
+char* receive_string(ConnectionSocket *connection) {
+  char *result;
+  int status = receive_all(connection, (void **) &result);
+  // string must be null terminated
+  if (status < 0 || result[status - 1] != '\0') return NULL;
+  return result;
+}

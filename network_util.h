@@ -66,6 +66,10 @@ int connection_receive(ConnectionSocket *connection, void *memory, int length);
 
 int receive_all(ConnectionSocket *connection, void **result);
 
+int send_string(ConnectionSocket *connection, char* string);
+
+char* receive_string(ConnectionSocket *connection);
+
 // End FullSocket definition
 
 #endif
