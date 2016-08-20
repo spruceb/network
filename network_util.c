@@ -170,7 +170,9 @@ int connection_receive(ConnectionSocket *connection, void *memory, int length) {
   return total_received;
 }
 
-int receive_all(ConnectionSocket *connection, void **result) {
+
+
+int _receive_all(ConnectionSocket *connection, void **result, bool null_terminate) {
   int buffer_size = 400;
   data_vector data = new_data_vector(0);
   size_t_vector message_lengths = new_size_t_vector(0);
@@ -191,6 +193,7 @@ int receive_all(ConnectionSocket *connection, void **result) {
   for (int i = 0; i < message_lengths.length; i++) {
     final_length += get(&message_lengths, i);
   }
+  if (null_terminate) final_length += sizeof(char);
   void *built_result = malloc(final_length);
   void *intermediate_result = built_result;
   for (int i = 0; i < data.length; i++) {
@@ -200,8 +203,13 @@ int receive_all(ConnectionSocket *connection, void **result) {
   }
   free(data.data);
   free(message_lengths.data);
+  if (null_terminate) *((char *) intermediate_result) = '\0';
   *result = built_result;
   return final_length;
+}
+
+int receive_all(ConnectionSocket *connection, void **result) {
+  return _receive_all(connection, result, false);
 }
 
 int send_string(ConnectionSocket *connection, char* string) {
@@ -211,8 +219,11 @@ int send_string(ConnectionSocket *connection, char* string) {
 
 char* receive_string(ConnectionSocket *connection) {
   char *result;
-  int status = receive_all(connection, (void **) &result);
+  int status = _receive_all(connection, (void **) &result, true);
   // string must be null terminated
-  if (status < 0 || result[status - 1] != '\0') return NULL;
+  if (status < 0 || result[status] != '\0') {
+    fprintf(stderr, "Receive string error! status: %d\n", status);
+    return NULL;
+  } 
   return result;
 }

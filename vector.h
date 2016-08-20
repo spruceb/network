@@ -47,7 +47,7 @@ DEFINE_VECTOR_HEADER(size_t, size_t)
                                 float_vector *: set_float,              \
                                 data_vector *: set_data,                \
                                 char_vector *: set_char,                \
-                                size_t_vector *: set_size_t             \
+                                size_t_vector *: set_size_t,            \
                                 default: set_int                        \
                                 )(X, I, V)
 
@@ -59,7 +59,7 @@ DEFINE_VECTOR_HEADER(size_t, size_t)
                               float_vector *: append_float,             \
                               data_vector *: append_data,               \
                               char_vector *: append_char,               \
-                              size_t_vector *: append_size_t            \
+                              size_t_vector *: append_size_t,           \
                               default: append_int                       \
                               )(X, V)
 
