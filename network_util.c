@@ -173,7 +173,7 @@ int connection_receive(ConnectionSocket *connection, void *memory, int length) {
 int receive_all(ConnectionSocket *connection, void **result) {
   int buffer_size = 400;
   int received_messages = 0;
-  int array_capacity = 5;
+  int array_capacity = 1;
   void **data = malloc(sizeof(void *) * array_capacity);
   size_t *message_lengths = malloc(sizeof(size_t) * array_capacity);
   void *current_buffer = malloc(buffer_size);
