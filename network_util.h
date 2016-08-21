@@ -39,8 +39,6 @@ void full_close(FullSocket *full_socket);
 FullSocket get_bindable_socket(const char *address,
                                const char *service);
 
-FullSocket get_http_socket(const char *address);
-
 int full_connect(FullSocket *full_socket);
 
 int full_listen(FullSocket *full_socket, int backlog);
@@ -62,7 +60,7 @@ int connection_send(ConnectionSocket *connection, const void *message,
 int send_all(ConnectionSocket *connection, const void *message,
              int message_length);
 
-int connection_receive(ConnectionSocket *connection, void *memory, int length);
+int connection_receive(ConnectionSocket *connection, void *memory, size_t length);
 
 int receive_all(ConnectionSocket *connection, void **result);
 

@@ -88,10 +88,6 @@ FullSocket get_bindable_socket(const char *address,
   return full_socket;
 }
 
-FullSocket get_http_socket(const char *address) {
-  return get_bindable_socket(address, "http");
-}
-
 int full_connect(FullSocket *full_socket) {
   int status = connect(full_socket->socket_id, full_socket->address.ai_addr,
                        full_socket->address.ai_addrlen);
@@ -162,15 +158,13 @@ int send_all(ConnectionSocket *connection, const void *message,
   return total_sent;
 }
 
-int connection_receive(ConnectionSocket *connection, void *memory, int length) {
+int connection_receive(ConnectionSocket *connection, void *memory, size_t length) {
   int total_received = recv(connection->socket_id, memory, length, 0);
   if (total_received < 0) {
     perror("Receive error");
   }
   return total_received;
 }
-
-
 
 int _receive_all(ConnectionSocket *connection, void **result, bool null_terminate) {
   int buffer_size = 400;
