@@ -12,7 +12,7 @@ void child_handler(int signal) {
   errno = saved_error;
 }
 
-int main(int argc, char* argv[]) {
+int main() {
   struct sigaction action;
   action.sa_handler = child_handler;
   sigemptyset(&action.sa_mask);
@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
       char* message = "Test response\n";
       char* received = receive_string(&connection_made);
       if (received != NULL) {
-        int received_len = strlen(received);
         printf("RECEIVED\n%s\n", received);
         int bytes_sent = send_string(&connection_made, message);
         if (bytes_sent < -1) exit(1);

@@ -137,7 +137,7 @@ int connection_send(ConnectionSocket *connection, const void *message,
   return sent;
 }
 
-int send_all(ConnectionSocket *connection, const void *message,
+int send_all(ConnectionSocket *connection, void *message,
              int message_length) {
   int total_sent = 0;
   int sent;
@@ -148,7 +148,7 @@ int send_all(ConnectionSocket *connection, const void *message,
       break;
     }
     total_sent += sent;
-    message += sent;
+    message = (void *) ((char*) message + sent);
     message_length -= sent;
   }
   if (total_sent < message_length) {
@@ -167,39 +167,19 @@ int connection_receive(ConnectionSocket *connection, void *memory, size_t length
 }
 
 int _receive_all(ConnectionSocket *connection, void **result, bool null_terminate) {
-  int buffer_size = 400;
-  data_vector data = new_data_vector(0);
-  size_t_vector message_lengths = new_size_t_vector(0);
-  void *current_buffer = malloc(buffer_size);
+  NetworkBuffer buffer = new_network_buffer(1024);
   int received;
   while (true) {
-    received = connection_receive(connection, current_buffer, buffer_size);
+    received = connection_receive(connection, buffer.current_buffer,
+                                  buffer.buffer_length);
     if (received < 1) {
       // Closed or errored
-      free(current_buffer);
       break;
     }
-    append(&data, current_buffer);
-    append(&message_lengths, received);
-    current_buffer = malloc(buffer_size);
+    next_buffer(&buffer, received);
   }
-  int final_length = 0;
-  for (int i = 0; i < message_lengths.length; i++) {
-    final_length += get(&message_lengths, i);
-  }
-  if (null_terminate) final_length += sizeof(char);
-  void *built_result = malloc(final_length);
-  void *intermediate_result = built_result;
-  for (int i = 0; i < data.length; i++) {
-    memcpy(intermediate_result, get(&data, i), get(&message_lengths, i));
-    intermediate_result += get(&message_lengths, i);
-    free(get(&data, i));
-  }
-  free(data.data);
-  free(message_lengths.data);
-  if (null_terminate) *((char *) intermediate_result) = '\0';
-  *result = built_result;
-  return final_length;
+  *result = combine_buffers(&buffer, null_terminate);
+  return buffer.buffer_length;
 }
 
 int receive_all(ConnectionSocket *connection, void **result) {
@@ -218,6 +198,49 @@ char* receive_string(ConnectionSocket *connection) {
   if (status < 0 || result[status] != '\0') {
     fprintf(stderr, "Receive string error! status: %d\n", status);
     return NULL;
-  } 
+  }
   return result;
+}
+
+// Network Buffer
+
+NetworkBuffer new_network_buffer(size_t buffer_length) {
+  NetworkBuffer buffer;
+  buffer.data = new_data_vector(0);
+  buffer.lengths = new_size_t_vector(0);
+  buffer.buffer_length = buffer_length;
+  buffer.current_buffer = malloc(buffer_length);
+  return buffer;
+}
+
+void* next_buffer(NetworkBuffer *buffer, size_t amount_used) {
+  append(&buffer->data, buffer->current_buffer);
+  append(&buffer->lengths, amount_used);
+  void* current_buffer = malloc(buffer->buffer_length);
+  buffer->current_buffer = current_buffer;
+  return current_buffer;
+}
+
+void* combine_buffers(NetworkBuffer* buffer, bool null_terminate) {
+  free(buffer->current_buffer);
+  size_t total_size = null_terminate;
+  for (int i = 0; i < buffer->lengths.length; i++) {
+    total_size += get(&buffer->lengths, i);
+  }
+  void* combined_buffer = malloc(total_size + null_terminate);
+  void* intermediate_result = combined_buffer;
+  for (int i = 0; i < buffer->data.length; i++) {
+    void* data = get(&buffer->data, i);
+    size_t length = get(&buffer->lengths, i);
+    memcpy(intermediate_result, data, length);
+    intermediate_result = (void*) ((char*) intermediate_result + length);
+    free(data);
+  }
+  if (null_terminate)
+    *((char *) combined_buffer + (total_size - 1)) = '\0';
+  free(buffer->data.data);
+  free(buffer->lengths.data);
+  buffer->current_buffer = combined_buffer;
+  buffer->buffer_length = total_size;
+  return combined_buffer;
 }

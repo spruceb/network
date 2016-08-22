@@ -57,7 +57,7 @@ ConnectionSocket listen_connect(FullSocket *full_socket, int backlog);
 int connection_send(ConnectionSocket *connection, const void *message,
                     int message_length);
 
-int send_all(ConnectionSocket *connection, const void *message,
+int send_all(ConnectionSocket *connection, void *message,
              int message_length);
 
 int connection_receive(ConnectionSocket *connection, void *memory, size_t length);
@@ -69,5 +69,19 @@ int send_string(ConnectionSocket *connection, char* string);
 char* receive_string(ConnectionSocket *connection);
 
 // End FullSocket definition
+
+// NetworkBuffer class definition
+typedef struct {
+  data_vector data;
+  size_t_vector lengths;
+  void* current_buffer;
+  size_t buffer_length;
+} NetworkBuffer;
+
+NetworkBuffer new_network_buffer(size_t buffer_length);
+
+void* next_buffer(NetworkBuffer *buffer, size_t amount_used);
+
+void* combine_buffers(NetworkBuffer* buffer, bool null_terminate);
 
 #endif
