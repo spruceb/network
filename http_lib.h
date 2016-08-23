@@ -42,6 +42,14 @@ typedef struct {
   Body* body;
 } Request;
 
+char* get_line(ConnectionSocket *connection, bytes remaining_data);
 
+char* get_method(char* first_line, Request* request);
+
+char* get_uri(char* first_line, Request* request);
+
+char* get_version(char* first_line, Request* request);
+
+Request receive_request(ConnectionSocket* connection);
 
 #endif
