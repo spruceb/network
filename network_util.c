@@ -206,41 +206,49 @@ char* receive_string(ConnectionSocket *connection) {
 
 NetworkBuffer new_network_buffer(size_t buffer_length) {
   NetworkBuffer buffer;
-  buffer.data = new_data_vector(0);
+  buffer.data = new_byte_vector(0);
   buffer.lengths = new_size_t_vector(0);
   buffer.buffer_length = buffer_length;
   buffer.current_buffer = malloc(buffer_length);
   return buffer;
 }
 
-void* next_buffer(NetworkBuffer *buffer, size_t amount_used) {
+bytes next_buffer(NetworkBuffer *buffer, size_t amount_used) {
   append(&buffer->data, buffer->current_buffer);
   append(&buffer->lengths, amount_used);
-  void* current_buffer = malloc(buffer->buffer_length);
+  bytes current_buffer = malloc(buffer->buffer_length);
   buffer->current_buffer = current_buffer;
   return current_buffer;
 }
 
-void* combine_buffers(NetworkBuffer* buffer, bool null_terminate) {
+bytes combine_buffers(NetworkBuffer* buffer, bool null_terminate) {
   free(buffer->current_buffer);
   size_t total_size = null_terminate;
   for (int i = 0; i < buffer->lengths.length; i++) {
     total_size += get(&buffer->lengths, i);
   }
-  void* combined_buffer = malloc(total_size + null_terminate);
-  void* intermediate_result = combined_buffer;
+  bytes combined_buffer = malloc(total_size + null_terminate);
+  bytes intermediate_result = combined_buffer;
   for (int i = 0; i < buffer->data.length; i++) {
-    void* data = get(&buffer->data, i);
+    bytes data = get(&buffer->data, i);
     size_t length = get(&buffer->lengths, i);
     memcpy(intermediate_result, data, length);
-    intermediate_result = (void*) ((char*) intermediate_result + length);
+    intermediate_result += length;
     free(data);
   }
   if (null_terminate)
-    *((char *) combined_buffer + (total_size - 1)) = '\0';
+    combined_buffer[total_size - 1] = '\0';
   free(buffer->data.data);
   free(buffer->lengths.data);
   buffer->current_buffer = combined_buffer;
   buffer->buffer_length = total_size;
   return combined_buffer;
+}
+
+void free_buffer(NetworkBuffer* buffer) {
+  for (int i = 0; i < buffer->data.length; i++) {
+    free(get(&buffer->data, i));
+  }
+  free(buffer->lengths.data);
+  free(buffer->current_buffer);
 }

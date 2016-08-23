@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef uint8_t* bytes;
 #define DEFINE_VECTOR_HEADER(T, N)                                      \
                                                                         \
   typedef struct {                                                      \
@@ -25,18 +26,20 @@ DEFINE_VECTOR_HEADER(char *, string)
 DEFINE_VECTOR_HEADER(double, double)
 DEFINE_VECTOR_HEADER(float, float)
 DEFINE_VECTOR_HEADER(void *, data)
+DEFINE_VECTOR_HEADER(bytes, byte)
 DEFINE_VECTOR_HEADER(char, char)
 DEFINE_VECTOR_HEADER(size_t, size_t)
 
 #define get(X, I) _Generic((X),                                         \
-                           int_vector *: get_int,                       \
+                             int_vector *: get_int,                     \
                            string_vector *: get_string,                 \
                            double_vector *: get_double,                 \
                            float_vector *: get_float,                   \
                            data_vector *: get_data,                     \
                            char_vector *: get_char,                     \
                            size_t_vector *: get_size_t,                 \
-                           default: get_int                             \
+                           byte_vector *: get_byte,                     \
+  default: get_int                                                      \
                            )(X, I)                                      
 
 
@@ -48,7 +51,8 @@ DEFINE_VECTOR_HEADER(size_t, size_t)
                                 data_vector *: set_data,                \
                                 char_vector *: set_char,                \
                                 size_t_vector *: set_size_t,            \
-                                default: set_int                        \
+                                byte_vector *: set_byte,                \
+ default: set_int                                                       \
                                 )(X, I, V)
 
 
@@ -60,7 +64,8 @@ DEFINE_VECTOR_HEADER(size_t, size_t)
                               data_vector *: append_data,               \
                               char_vector *: append_char,               \
                               size_t_vector *: append_size_t,           \
-                              default: append_int                       \
+                              byte_vector *: append_byte,               \
+  default: append_int                                                   \
                               )(X, V)
 
 #endif

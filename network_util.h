@@ -72,16 +72,18 @@ char* receive_string(ConnectionSocket *connection);
 
 // NetworkBuffer class definition
 typedef struct {
-  data_vector data;
+  byte_vector data;
   size_t_vector lengths;
-  void* current_buffer;
+  bytes current_buffer;
   size_t buffer_length;
 } NetworkBuffer;
 
 NetworkBuffer new_network_buffer(size_t buffer_length);
 
-void* next_buffer(NetworkBuffer *buffer, size_t amount_used);
+bytes next_buffer(NetworkBuffer *buffer, size_t amount_used);
 
-void* combine_buffers(NetworkBuffer* buffer, bool null_terminate);
+bytes combine_buffers(NetworkBuffer* buffer, bool null_terminate);
+
+void free_buffer(NetworkBuffer* buffer);
 
 #endif
