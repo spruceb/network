@@ -30,14 +30,14 @@ typedef struct {
   struct addrinfo address;
 } FullSocket;
 
-FullSocket get_socket(struct addrinfo *address);
+FullSocket* get_socket(struct addrinfo *address);
 
 int bind_socket(FullSocket *full_socket);
 
 void full_close(FullSocket *full_socket);
 
-FullSocket get_bindable_socket(const char *address,
-                               const char *service);
+FullSocket* get_bindable_socket(const char *address,
+                                const char *service);
 
 int full_connect(FullSocket *full_socket);
 
@@ -50,9 +50,9 @@ typedef struct {
   FullSocket *parent;
 } ConnectionSocket;
 
-ConnectionSocket full_accept(FullSocket *full_socket);
+ConnectionSocket* full_accept(FullSocket *full_socket);
 
-ConnectionSocket listen_connect(FullSocket *full_socket, int backlog);
+ConnectionSocket* listen_connect(FullSocket *full_socket, int backlog);
 
 int connection_send(ConnectionSocket *connection, const void *message,
                     int message_length);
@@ -78,7 +78,7 @@ typedef struct {
   size_t buffer_length;
 } NetworkBuffer;
 
-NetworkBuffer new_network_buffer(size_t buffer_length);
+NetworkBuffer * new_network_buffer(size_t buffer_length);
 
 bytes next_buffer(NetworkBuffer *buffer, size_t amount_used);
 

@@ -24,13 +24,13 @@ int main() {
   }
 
   char *address = NULL; // localhost
-  FullSocket full_socket = get_bindable_socket(address, PORT);
-  if (full_listen(&full_socket, BACKLOG) < 0) {
+  FullSocket* full_socket = get_bindable_socket(address, PORT);
+  if (full_listen(full_socket, BACKLOG) < 0) {
     return 1;
   }
   while (true) {
-    ConnectionSocket connection_made = full_accept(&full_socket);
-    if (connection_made.socket_id < 0) {
+    ConnectionSocket* connection_made = full_accept(full_socket);
+    if (connection_made->socket_id < 0) {
       continue;
     }
     int child_id = fork();
@@ -38,20 +38,21 @@ int main() {
       perror("Fork");
       break;
     } else if (!child_id) {
-      full_close(&full_socket);
-      char* message = "Test response\n";
-      char* received = receive_string(&connection_made);
+      full_close(full_socket);
+      char* received = receive_string(connection_made);
       if (received != NULL) {
         printf("RECEIVED\n%s\n", received);
-        int bytes_sent = send_string(&connection_made, message);
+        int bytes_sent = send_string(connection_made, "Test response\n");
         if (bytes_sent < -1) exit(1);
       }
       free(received);
-      close(connection_made.socket_id);
+      close(connection_made->socket_id);
+      free(connection_made);
       exit(0);
     }
-    close(connection_made.socket_id);
+    close(connection_made->socket_id);
+    free(connection_made);
   }
-  full_close(&full_socket);
+  full_close(full_socket);
   return 0;
 }
