@@ -5,9 +5,25 @@
 
 FullSocket get_http_socket(const char *address);
 
+typedef enum {PATH, ABSOLUTE, AUTHORITY, ASTERISK, OPTION} URIType;
+
+typedef enum {GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE, INVALID} MethodType;
+
+const char* MethodTypeStrings[] = {
+  [GET] = "GET",
+  [HEAD] = "HEAD",
+  [POST] = "POST",
+  [PUT] = "PUT",
+  [DELETE] = "DELETE",
+  [CONNECT] = "CONNECT",
+  [OPTIONS] = "OPTIONS",
+  [TRACE] = "TRACE"
+};
+const size_t num_method_types;
+
 typedef struct {
   char* scheme;
-  char* authority;
+  char* host;
   char* path;
   char* options;
   char* fragment;
@@ -15,7 +31,7 @@ typedef struct {
 
 typedef struct {
   unsigned major_version;
-  unsigned minor_version; 
+  unsigned minor_version;
 } HTTPVersion;
 
 typedef struct {
@@ -40,6 +56,7 @@ typedef struct {
   HTTPVersion version;
   HeaderCollection* headers;
   Body* body;
+  URIType type;
 } Request;
 
 char* get_line(ConnectionSocket *connection, bytes remaining_data);
