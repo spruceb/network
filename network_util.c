@@ -83,7 +83,7 @@ FullSocket* get_bindable_socket(const char *address,
   freeaddrinfo(result);
   free(hints);
   if (res == NULL) {
-    fprintf(stderr, "Couldn't bind to: %s", address);
+    fprintf(stderr, "Couldn't bind to: %s\n", address);
     return NULL;
   }
   return full_socket;

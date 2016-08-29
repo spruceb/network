@@ -3,13 +3,13 @@
 
 #include "network_util.h"
 
-FullSocket get_http_socket(const char *address);
+FullSocket* get_http_socket(const char *address);
 
-typedef enum {PATH, ABSOLUTE, AUTHORITY, ASTERISK, OPTION} URIType;
+typedef enum {RELATIVE, ABSOLUTE, AUTHORITY, ASTERISK} URIType;
 
 typedef enum {GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE, INVALID} MethodType;
 
-const char* MethodTypeStrings[] = {
+static const char* MethodTypeStrings[] = {
   [GET] = "GET",
   [HEAD] = "HEAD",
   [POST] = "POST",
@@ -22,11 +22,30 @@ const char* MethodTypeStrings[] = {
 const size_t num_method_types;
 
 typedef struct {
+  string_vector components;
+} Path;
+
+typedef struct {
+  string_vector names;
+  string_vector values;
+} Query;
+
+typedef struct {
+  string_vector components;
+} Host;
+
+typedef struct {
+  Host* host;
+  unsigned port;
+} Authority;
+
+typedef struct {
   char* scheme;
-  char* host;
-  char* path;
-  char* options;
+  Authority* authority;
+  Path* path;
+  Query* options;
   char* fragment;
+  URIType type;
 } URI;
 
 typedef struct {
@@ -51,7 +70,7 @@ typedef struct {
 } Body;
 
 typedef struct {
-  char* method;
+  MethodType method;
   URI* uri;
   HTTPVersion version;
   HeaderCollection* headers;
@@ -59,14 +78,44 @@ typedef struct {
   URIType type;
 } Request;
 
-char* get_line(ConnectionSocket *connection, bytes remaining_data);
+char* get_line(ConnectionSocket *connection, bytes previous_data,
+               bytes remaining_data);
 
-char* get_method(char* first_line, Request* request);
+bool char_in_string(const char c, const char* string);
 
-char* get_uri(char* first_line, Request* request);
+string_vector split_on(const char* to_split, const char* split,
+                       int max_length);
 
-char* get_version(char* first_line, Request* request);
+MethodType string_to_methodtype(char* method_name);
 
-Request receive_request(ConnectionSocket* connection);
+const char* methodtype_to_string(MethodType method);
+
+int get_method(char* method_string, Request* request);
+
+bool has_scheme(char* uri_string);
+
+char* get_scheme(char* uri_string, URI* uri);
+
+int get_host(char* host_string, Authority* authority);
+
+int get_port(char* port_string, Authority* authority);
+
+Host* new_host();
+
+Authority* new_authority();
+
+char* get_authority(char* uri_string, URI* uri);
+
+Path* new_path();
+
+char* get_path(char* path_string, Path* path);
+
+char* get_relative(char* uri_string, URI* uri);
+
+int get_uri(char* uri_string, URI* uri, MethodType method);
+
+URI* new_uri();
+
+int receive_request(ConnectionSocket *connection, Request* request);
 
 #endif

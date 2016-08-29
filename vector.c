@@ -13,9 +13,10 @@ N##_vector new_##N##_vector(size_t length) {                            \
 }                                                                       \
                                                                         \
 T get_##N(N##_vector *vector, int index) {                              \
-  if (index >= vector->length || (-index) > vector->length) {           \
+  if (index >= vector->length || (index < 0) &&                         \
+      (-index) > vector->length) {                                      \
     fprintf(stderr,                                                     \
-            "Index %d is out of array bounds (length %zd)",             \
+            "Index %d is out of array bounds (length %zd)\n",           \
             index, vector->length);                                     \
     return *(vector->data);                                             \
   }                                                                     \
@@ -27,9 +28,10 @@ T get_##N(N##_vector *vector, int index) {                              \
 }                                                                       \
                                                                         \
 void set_##N(N##_vector *vector, int index, T value) {                  \
-  if (index >= vector->length || (-index) > vector->length) {           \
+  if (index >= vector->length || (index < 0) &&                         \
+      (-index) > vector->length) {                                      \
     fprintf(stderr,                                                     \
-            "Index %d is out of array bounds (length %zd)",             \
+            "Index %d is out of array bounds (length %zd)\n",           \
             index, vector->length);                                     \
     return;                                                             \
   }                                                                     \
