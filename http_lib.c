@@ -60,7 +60,7 @@ char* get_line(ConnectionSocket *connection, bytes previous_data,
   }
 }
 
-bool char_in_string(char c, const char* string) {
+bool char_in_string(const char c, const char* string) {
   for (const char* p = string; *p != '\0'; p++) {
     if (*p == c)
       return true;
@@ -130,7 +130,7 @@ char* join_on(string_vector *vector, const char* join_string) {
   return result_string;
 }
 
-MethodType string_to_methodtype(char* method_name) {
+MethodType string_to_methodtype(const char* method_name) {
   for (MethodType i = GET; i < INVALID; i++) {
     if (strcmp(method_name, MethodTypeStrings[i]) == 0) {
       return i;
@@ -143,7 +143,7 @@ const char* methodtype_to_string(MethodType method) {
   return MethodTypeStrings[method];
 }
 
-int get_method(char* method_string, Request* request) {
+int get_method(const char* method_string, Request* request) {
   MethodType method = string_to_methodtype(method_string);
   if (method == INVALID) {
     fprintf(stderr, "Error: malformed method '%s'\n", method_string);
@@ -153,7 +153,7 @@ int get_method(char* method_string, Request* request) {
   return 0;
 }
 
-bool has_scheme(char* uri_string) {
+bool has_scheme(const char* uri_string) {
   size_t string_length = strlen(uri_string);
   if (string_length < 4) {
     return false;
@@ -167,13 +167,13 @@ bool has_scheme(char* uri_string) {
   return false;
 }
 
-char* get_scheme(char* uri_string, URI* uri) {
+const char* get_scheme(const char* uri_string, URI* uri) {
   size_t string_length = strlen(uri_string);
-  for (char* p = uri_string + 3; p < uri_string + string_length; p++) {
+  for (const char* p = uri_string + 3; p < uri_string + string_length; p++) {
     if (*(p - 2) == ':' && *(p - 1) == '/' && *p == '/') {
       size_t scheme_length = (p - 3) - uri_string;
       char* scheme = malloc(sizeof(char) * (scheme_length + 1));
-      strncpy(uri_string, scheme, scheme_length);
+      strncpy(scheme, uri_string, scheme_length);
       scheme[scheme_length] = '\0';
       uri->scheme = scheme;
       return p + 1;
@@ -182,13 +182,13 @@ char* get_scheme(char* uri_string, URI* uri) {
   return NULL;
 }
 
-int get_host(char* host_string, Authority* authority) {
+int get_host(const char* host_string, Authority* authority) {
   free(authority->host->components.data);
   authority->host->components = split_on(host_string, ".", -1);
   return 0;
 }
 
-int get_port(char* port_string, Authority* authority) {
+int get_port(const char* port_string, Authority* authority) {
   authority->port = atoi(port_string);
   return 0;
 }
@@ -206,10 +206,10 @@ Authority* new_authority() {
   return authority;
 }
 
-char* get_authority(char* uri_string, URI* uri) {
+const char* get_authority(const char* uri_string, URI* uri) {
   Authority* authority = new_authority();
   size_t authority_length = strcspn(uri_string, "/");
-  char* rest;
+  const char* rest;
   if (authority_length < strlen(uri_string)) {
     rest = uri_string + authority_length;
   } else {
@@ -229,12 +229,12 @@ Path* new_path() {
   return path;
 }
 
-char* get_path(char* path_string, Path* path) {
+int get_path(const char* path_string, Path* path) {
   path->components = split_on(path_string, "/", -1);
   return 0;
 }
 
-char* get_relative(char* uri_string, URI* uri) {
+char* get_relative(const char* uri_string, URI* uri) {
   size_t query_start = strcspn(uri_string, "?");
   size_t fragment_start = strcspn(uri_string, "#");
   size_t path_length;
@@ -244,12 +244,14 @@ char* get_relative(char* uri_string, URI* uri) {
     path_length = fragment_start;
   }
   char* path_string = malloc(sizeof(char) * (path_length + 1));
+  path_string[path_length] = '\0';
+  memcpy(path_string, uri_string, path_length);
   uri->path = new_path();
   get_path(path_string, uri->path);
   return 1;
 }
 
-int get_uri(char* uri_string, URI* uri, MethodType method) {
+int get_uri(const char* uri_string, URI* uri, MethodType method) {
   if (strcmp(uri_string, "*") == 0) {
     if (method == OPTIONS) {
       uri->type = ASTERISK;
@@ -264,7 +266,7 @@ int get_uri(char* uri_string, URI* uri, MethodType method) {
     } else return -1;
   } else {
     if (has_scheme(uri_string)) {
-      char* rest = get_scheme(uri_string, uri);
+      const char* rest = get_scheme(uri_string, uri);
       if (rest == NULL) return -1;
       rest = get_authority(rest, uri);
       if (rest == NULL) return -1;
@@ -294,7 +296,7 @@ URI* new_uri() {
   return uri;
 }
 
-int get_version(char* version_string, Request* request) {
+int get_version(const char* version_string, Request* request) {
   if (strncmp(version_string, "HTTP", 4) != 0) {
     fprintf(stderr, "Error: unknown protocol with version string %.4s",
             version_string);
@@ -318,24 +320,23 @@ int receive_request(ConnectionSocket *connection, Request* request) {
     return -1;
   }
   char* method_string = get(&line_components, 0);
-    char* uri_string = get(&line_components, 1);
-    printf("URI string: %s\n", uri_string);
+  char* uri_string = get(&line_components, 1);
 
-    char* version_string = get(&line_components, 2);
-    MethodType method = string_to_methodtype(method_string);
-    if (method == INVALID) {
-      fprintf(stderr, "INVALID METHOD: %d\n", method);
-      return -1;
-    }
-    request->method = method;
-    request->uri = new_uri();
-    if (get_uri(uri_string, request->uri, method) < 0) {
-      fprintf(stderr, "Error: problem with URI '%s'\n", uri_string);
-      return -1;
-    }
-    if (get_version(version_string, request) < 0) {
-      fprintf(stderr, "Error: problem with version: '%s'", version_string);
-      return -1;
-    }
-    return 0;
+  char* version_string = get(&line_components, 2);
+  MethodType method = string_to_methodtype(method_string);
+  if (method == INVALID) {
+    fprintf(stderr, "INVALID METHOD: %d\n", method);
+    return -1;
+  }
+  request->method = method;
+  request->uri = new_uri();
+  if (get_uri(uri_string, request->uri, method) < 0) {
+    fprintf(stderr, "Error: problem with URI '%s'\n", uri_string);
+    return -1;
+  }
+  if (get_version(version_string, request) < 0) {
+    fprintf(stderr, "Error: problem with version: '%s'", version_string);
+    return -1;
+  }
+  return 0;
 }

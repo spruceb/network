@@ -89,33 +89,33 @@ string_vector split_on(const char* to_split, const char* split,
                        int max_length);
 char* join_on(string_vector *vector, const char* join_string);
 
-MethodType string_to_methodtype(char* method_name);
+MethodType string_to_methodtype(const char* method_name);
 
 const char* methodtype_to_string(MethodType method);
 
-int get_method(char* method_string, Request* request);
+int get_method(const char* method_string, Request* request);
 
-bool has_scheme(char* uri_string);
+bool has_scheme(const char* uri_string);
 
-char* get_scheme(char* uri_string, URI* uri);
+const char* get_scheme(const char* uri_string, URI* uri);
 
-int get_host(char* host_string, Authority* authority);
+int get_host(const char* host_string, Authority* authority);
 
-int get_port(char* port_string, Authority* authority);
+int get_port(const char* port_string, Authority* authority);
 
 Host* new_host();
 
 Authority* new_authority();
 
-char* get_authority(char* uri_string, URI* uri);
+const char* get_authority(const char* uri_string, URI* uri);
 
 Path* new_path();
 
-char* get_path(char* path_string, Path* path);
+int get_path(const char* path_string, Path* path);
 
-char* get_relative(char* uri_string, URI* uri);
+char* get_relative(const char* uri_string, URI* uri);
 
-int get_uri(char* uri_string, URI* uri, MethodType method);
+int get_uri(const char* uri_string, URI* uri, MethodType method);
 
 URI* new_uri();
 
