@@ -1,5 +1,5 @@
-#ifndef _NETWORK_UTIL_H_
-#define _NETWORK_UTIL_H_
+#ifndef NETWORK_UTIL_H_
+#define NETWORK_UTIL_H_
 
 #include <stdio.h>
 #include <unistd.h>

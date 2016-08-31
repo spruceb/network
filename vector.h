@@ -1,5 +1,5 @@
-#ifndef _VECTOR_H_
-#define _VECTOR_H_
+#ifndef VECTOR_H_
+#define VECTOR_H_
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
-#ifndef _HTTP_LIB_H_
-#define _HTTP_LIB_H_
+#ifndef HTTP_LIB_H_
+#define HTTP_LIB_H_
 
 #include "network_util.h"
 
