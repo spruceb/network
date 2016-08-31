@@ -7,8 +7,6 @@ N##_vector new_##N##_vector(size_t length) {                            \
   new_vec.data = malloc(sizeof(T) * length);                            \
   new_vec.length = length;                                              \
   new_vec.capacity = length;                                            \
-  if (length == 0)                                                      \
-    new_vec.capacity = -1;                                              \
   return new_vec;                                                       \
 }                                                                       \
                                                                         \
@@ -45,13 +43,13 @@ void set_##N(N##_vector *vector, int index, T value) {                  \
 int append_##N(N##_vector *vector, T value) {                           \
   if (vector->length >= vector->capacity) {                             \
     T *realloced = realloc(vector->data,                                \
-                           vector->capacity * 2 * sizeof(T));           \
+                           (vector->capacity + 1) * 2 * sizeof(T));     \
     if (!realloced) {                                                   \
       free(vector->data);                                               \
       return -1;                                                        \
     }                                                                   \
     vector->data = realloced;                                           \
-    vector->capacity *= 2;                                              \
+    vector->capacity = (vector->capacity + 1) * 2;                      \
   }                                                                     \
   vector->data[vector->length] = value;                                 \
   vector->length++;                                                     \
