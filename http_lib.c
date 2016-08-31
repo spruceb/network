@@ -5,7 +5,7 @@ DEFINE_VECTOR(HeaderPair, hpair);
 static const int HTTP_BUFFER_SIZE = 1024;
 
 FullSocket* get_http_socket(const char *address) {
-  return get_bindable_socket(address, "80");
+  return get_bindable_socket(address, "3333");
 }
 
 char* get_line(ConnectionSocket *connection, bytes previous_data,
@@ -247,34 +247,61 @@ int get_uri(char* uri_string, URI* uri, MethodType method) {
   }
 }
 
+char* path_string(Path* path) {
+  char* result = join_on(&path->components, "/");
+  if (strlen(result) == 0) {
+    result = "/";
+  }
+  return result;
+}
+
 URI* new_uri() {
   URI* uri = malloc(sizeof(URI));
   return uri;
+}
+
+int get_version(char* version_string, Request* request) {
+  if (strncmp(version_string, "HTTP", 4) != 0) {
+    fprintf(stderr, "Error: unknown protocol with version string %.4s",
+            version_string);
+    return -1;
+  }
+  request->version.major = *(version_string + 5) - '0';
+  request->version.minor = *(version_string + 7) - '0';
+  return 0;
 }
 
 int receive_request(ConnectionSocket *connection, Request* request) {
   char* excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(char));
   char* line = get_line(connection, NULL, (bytes) excess_data);
   if (line == NULL) {
+    fprintf(stderr, "Error: invalid line\n");
     return -1;
   }
-  printf("line: !%s!\n", line);
   string_vector line_components = split_on(line, " ", -1);
-  printf("test, %zu\n", line_components.length);
-  printf("test |%s|\n", get(&line_components, 1));
-  if (line_components.length > 3) {
+  if (line_components.length != 3) {
     fprintf(stderr, "Error: malformed first line |%s|\n", line);
     return -1;
   }
-  MethodType method = string_to_methodtype(get(&line_components, 0));
-  if (method == INVALID) {
-    return -1;
-  }
-  request->method = method;
-  request->uri = new_uri();
-  if (get_uri(get(&line_components, 1), request->uri, method) < 0) {
-    fprintf(stderr, "Error: problem with URI '%s'\n", get(&line_components, 1));
-    return -1;
-  }
-  return 0;
+  char* method_string = get(&line_components, 0);
+    char* uri_string = get(&line_components, 1);
+    printf("URI string: %s\n", uri_string);
+
+    char* version_string = get(&line_components, 2);
+    MethodType method = string_to_methodtype(method_string);
+    if (method == INVALID) {
+      fprintf(stderr, "INVALID METHOD: %d\n", method);
+      return -1;
+    }
+    request->method = method;
+    request->uri = new_uri();
+    if (get_uri(uri_string, request->uri, method) < 0) {
+      fprintf(stderr, "Error: problem with URI '%s'\n", uri_string);
+      return -1;
+    }
+    if (get_version(version_string, request) < 0) {
+      fprintf(stderr, "Error: problem with version: '%s'", version_string);
+      return -1;
+    }
+    return 0;
 }

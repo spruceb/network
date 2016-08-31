@@ -17,12 +17,14 @@ static const char* MethodTypeStrings[] = {
   [DELETE] = "DELETE",
   [CONNECT] = "CONNECT",
   [OPTIONS] = "OPTIONS",
-  [TRACE] = "TRACE"
+  [TRACE] = "TRACE",
+  [INVALID]= "INVALID"
 };
 const size_t num_method_types;
 
 typedef struct {
   string_vector components;
+  bool root;
 } Path;
 
 typedef struct {
@@ -49,8 +51,8 @@ typedef struct {
 } URI;
 
 typedef struct {
-  unsigned major_version;
-  unsigned minor_version;
+  unsigned major;
+  unsigned minor;
 } HTTPVersion;
 
 typedef struct {
@@ -117,5 +119,7 @@ int get_uri(char* uri_string, URI* uri, MethodType method);
 URI* new_uri();
 
 int receive_request(ConnectionSocket *connection, Request* request);
+
+char* path_string(Path* path);
 
 #endif
