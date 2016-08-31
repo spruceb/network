@@ -97,6 +97,39 @@ string_vector split_on(const char* to_split, const char* split,
   return vec;
 }
 
+char* join_on(string_vector *vector, const char* join_string) {
+  if (vector->length < 1) {
+    char* result = malloc(sizeof(char));
+    *result = '\0';
+    return result;
+  }
+  size_t num_joins = vector->length - 1;
+  size_t join_length = strlen(join_string);
+  size_t joins_size = join_length * num_joins;
+  size_t joined_size = 0;
+  size_t_vector lengths = new_size_t_vector(0);
+  for (int i = 0; i < vector->length; i++) {
+    size_t length = strlen(get(vector, i));
+    joined_size += length;
+    append(&lengths, length);
+  }
+  size_t total_size = joined_size + joins_size;
+  char* result_string = malloc(total_size + 1);
+  result_string[total_size] = '\0';
+  char* input_pointer = result_string;
+  for (int i = 0; i < vector->length; i++) {
+    size_t string_length = get(&lengths, i);
+    memcpy(input_pointer, get(vector, i), string_length);
+    input_pointer += string_length;
+    if (i < vector->length - 1) {
+      memcpy(input_pointer, join_string, join_length);
+      input_pointer += join_length;
+    }
+  }
+  free(lengths.data);
+  return result_string;
+}
+
 MethodType string_to_methodtype(char* method_name) {
   for (MethodType i = GET; i < INVALID; i++) {
     if (strcmp(method_name, MethodTypeStrings[i]) == 0) {
@@ -192,6 +225,7 @@ char* get_authority(char* uri_string, URI* uri) {
 Path* new_path() {
   Path* path = malloc(sizeof(Path));
   path->components = new_string_vector(0);
+  path->root = false;
   return path;
 }
 

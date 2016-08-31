@@ -18,8 +18,19 @@ int main() {
       continue;
     }
     Request request;
-    receive_request(connection_made, &request);
-    printf("%d", (int) request.method);
+    int status = receive_request(connection_made, &request);
+    if (status < 0) {
+      fprintf(stderr, "Request error\n");
+      close(connection_made->socket_id);
+      free(connection_made);
+      break;
+    }
+    printf("METHOD: %d %s\n", request.method, methodtype_to_string(request.method));
+    printf("PATH: %s\n", path_string(request.uri->path));
+    printf("VERSION: %d.%d\n", request.version.major, request.version.minor);
+    close(connection_made->socket_id);
+    free(connection_made);
+    break;
   }
   full_close(full_socket);
   return 0;

@@ -87,6 +87,7 @@ bool char_in_string(const char c, const char* string);
 
 string_vector split_on(const char* to_split, const char* split,
                        int max_length);
+char* join_on(string_vector *vector, const char* join_string);
 
 MethodType string_to_methodtype(char* method_name);
 
