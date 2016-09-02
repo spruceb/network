@@ -2,6 +2,7 @@
 #define HTTP_LIB_H_
 
 #include "network_util.h"
+#include "strings.h"
 
 FullSocket* get_http_socket(const char *address);
 
@@ -82,12 +83,6 @@ typedef struct {
 
 char* get_line(ConnectionSocket *connection, bytes previous_data,
                bytes remaining_data);
-
-bool char_in_string(const char c, const char* string);
-
-string_vector split_on(const char* to_split, const char* split,
-                       int max_length);
-char* join_on(string_vector *vector, const char* join_string);
 
 MethodType string_to_methodtype(const char* method_name);
 

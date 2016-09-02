@@ -1,7 +1,5 @@
 #ifndef VECTOR_H_
 #define VECTOR_H_
-
-#include <stdio.h>
 #include <stdlib.h>
 
 typedef uint8_t* bytes;
@@ -40,20 +38,20 @@ DEFINE_VECTOR_HEADER(size_t, size_t)
                            size_t_vector *: get_size_t,                 \
                            byte_vector *: get_byte,                     \
   default: get_int                                                      \
-                           )(X, I)                                      
+                           )(X, I)
 
 
 #define set(X, I, V) _Generic((X),                                      \
-                                int_vector *: set_int,                  \
-                                string_vector *: set_string,            \
-                                double_vector *: set_double,            \
-                                float_vector *: set_float,              \
-                                data_vector *: set_data,                \
-                                char_vector *: set_char,                \
-                                size_t_vector *: set_size_t,            \
-                                byte_vector *: set_byte,                \
- default: set_int                                                       \
-                                )(X, I, V)
+                              int_vector *: set_int,                    \
+                              string_vector *: set_string,              \
+                              double_vector *: set_double,              \
+                              float_vector *: set_float,                \
+                              data_vector *: set_data,                  \
+                              char_vector *: set_char,                  \
+                              size_t_vector *: set_size_t,              \
+                              byte_vector *: set_byte,                  \
+  default: set_int                                                      \
+                              )(X, I, V)
 
 
 #define append(X, V) _Generic((X),                                      \

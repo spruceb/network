@@ -1,4 +1,5 @@
 #include "network_util.h"
+#include <errno.h>
 
 struct addrinfo* get_hint() {
   struct addrinfo *hints = malloc(sizeof(struct addrinfo));
