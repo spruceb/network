@@ -1,6 +1,7 @@
 #include "network_util.h"
 #include <signal.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 #define PORT "3490"
 #define BACKLOG 10
