@@ -84,31 +84,13 @@ int get_method(const char* method_string, Request* request) {
 }
 
 bool has_scheme(const char* uri_string) {
-  size_t string_length = strlen(uri_string);
-  if (string_length < 4) {
-    return false;
-  }
-  for (int i = 2; i < string_length; i++) {
-    if (uri_string[i - 2] == ':' && uri_string[i - 1] == '/' &&
-        uri_string[i] == '/') {
-      return true;
-    }
-  }
-  return false;
+  return strstr(uri_string, "://");
 }
 
 const char* get_scheme(const char* uri_string, URI* uri) {
-  size_t string_length = strlen(uri_string);
-  for (const char* p = uri_string + 3; p < uri_string + string_length; p++) {
-    if (*(p - 2) == ':' && *(p - 1) == '/' && *p == '/') {
-      size_t scheme_length = (p - 3) - uri_string;
-      char* scheme = malloc(sizeof(char) * (scheme_length + 1));
-      strncpy(scheme, uri_string, scheme_length);
-      scheme[scheme_length] = '\0';
-      uri->scheme = scheme;
-      return p + 1;
-    }
-  }
+  char* scheme_end = strstr(uri_string, "://");
+  if (scheme_end)
+    return string_slice(uri_string, NULL, scheme_end);
   return NULL;
 }
 
@@ -124,13 +106,13 @@ int get_port(const char* port_string, Authority* authority) {
 }
 
 Host* new_host() {
-  Host* host = malloc(sizeof(Host));
+  Host* host = malloc(sizeof(*host));
   host->components = new_string_vector(0);
   return host;
 }
 
 Authority* new_authority() {
-  Authority* authority = malloc(sizeof(Authority));
+  Authority* authority = malloc(sizeof(*authority));
   authority->host = new_host();
   authority->port = 88;
   return authority;
@@ -153,7 +135,7 @@ const char* get_authority(const char* uri_string, URI* uri) {
 }
 
 Path* new_path() {
-  Path* path = malloc(sizeof(Path));
+  Path* path = malloc(sizeof(*path));
   path->components = new_string_vector(0);
   path->root = false;
   return path;
@@ -173,7 +155,7 @@ char* get_relative(const char* uri_string, URI* uri) {
   } else {
     path_length = fragment_start;
   }
-  char* path_string = malloc(sizeof(char) * (path_length + 1));
+  char* path_string = malloc(sizeof(*path_string) * (path_length + 1));
   path_string[path_length] = '\0';
   memcpy(path_string, uri_string, path_length);
   uri->path = new_path();
@@ -222,7 +204,7 @@ char* path_string(Path* path) {
 }
 
 URI* new_uri() {
-  URI* uri = malloc(sizeof(URI));
+  URI* uri = malloc(sizeof(*uri));
   return uri;
 }
 
@@ -238,7 +220,7 @@ int get_version(const char* version_string, Request* request) {
 }
 
 int receive_request(ConnectionSocket *connection, Request* request) {
-  char* excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(char));
+  char* excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(*excess_data));
   char* line = get_line(connection, NULL, (bytes) excess_data);
   if (line == NULL) {
     fprintf(stderr, "Error: invalid line\n");
