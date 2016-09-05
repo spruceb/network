@@ -42,3 +42,9 @@ char* string_slice_char_ptr(const char* string, const char* start, const char* e
                                        int: string_slice_int,           \
                                        char*: string_slice_char_ptr,    \
   default: string_slice_char_ptr)(X, I, J)
+
+char* lstrip_whitespace(const char* original);
+
+char* rstrip_whitespace(const char* original);
+
+char* strip_whitespace(const char* original);

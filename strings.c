@@ -1,5 +1,6 @@
 #include "strings.h"
 #include <string.h>
+#include <ctype.h>
 
 bool char_in_string(const char c, const char* string) {
   for (const char* p = string; *p != '\0'; p++) {
@@ -89,4 +90,30 @@ char* string_slice_ints(const char* string, int start, int end) {
   if (end < 0)
     end = strlen(string);
   return string_slice_char_ptr(string, string + start, string + end);
+}
+
+char* lstrip_whitespace(const char* original) {
+  const char* p = original;
+  for (; *p && isspace(*p); p++);
+  return string_slice(original, p, NULL);
+}
+
+char* rstrip_whitespace(const char* original) {
+  const char* p = original + strlen(original) - 1;
+  for (; isspace(*p); p--);
+  return string_slice(original, NULL, p + 1);
+}
+
+char* strip_whitespace(const char* original) {
+  const char* start = NULL;
+  const char* end = NULL;
+  for (const char* p = original; *p; p++) {
+    if (!start && !isspace(*p)) {
+      start = p;
+    } else if (start && !end && isspace(*p)) {
+      end = p;
+      break;
+    }
+  }
+  return string_slice(original, start, end);
 }
