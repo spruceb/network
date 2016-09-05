@@ -1,6 +1,7 @@
 #include "strings.h"
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 bool char_in_string(const char c, const char* string) {
   for (const char* p = string; *p != '\0'; p++) {
@@ -43,6 +44,7 @@ char* join_on(string_vector *vector, const char* join_string) {
   return result_string;
 }
 
+
 string_vector split_on(const char* to_split, const char* split,
                        int max_length) {
   string_vector vec = new_string_vector(0);
@@ -75,8 +77,10 @@ string_vector split_on(const char* to_split, const char* split,
 char* string_slice_char_ptr(const char* string, const char* start, const char* end) {
   if (!start)
     start = string;
-  if (!end)
+  if (!end) {
+    end = start;
     while (*end++);
+  }
   int length = end - start;
   char* result = malloc((length + 1) * sizeof(*result));
   result[length] = '\0';

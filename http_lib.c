@@ -1,6 +1,7 @@
 #include "http_lib.h"
+#include <ctype.h>
 
-DEFINE_VECTOR(HeaderPair, hpair);
+DEFINE_VECTOR(HeaderPair, hpair)
 
 static const int HTTP_BUFFER_SIZE = 1024;
 
@@ -12,16 +13,28 @@ char* get_line(ConnectionSocket *connection, bytes previous_data,
                bytes remaining_data) {
   // sizeof char must be 1
   NetworkBuffer* buffer = new_network_buffer(HTTP_BUFFER_SIZE);
+  char* line_end = NULL;
   if (previous_data != NULL) {
-    size_t previous_size = strlen((char*) previous_data) + 1;
-    memcpy(buffer->current_buffer, previous_data, previous_size);
-    next_buffer(buffer, previous_size);
+    char* previous_end;
+    if ((previous_end = strstr((char*) previous_data, "\r\n"))) {
+      size_t previous_size = previous_end - (char*) previous_data;
+      line_end = previous_end;
+      memcpy(buffer->current_buffer, previous_data, previous_size);
+      buffer->current_buffer[previous_size] = '\0';
+      next_buffer(buffer, previous_size);
+      char* rest = string_slice((char*) previous_data, previous_end + 2, NULL);
+      strcpy((char*) remaining_data, rest);
+      free(rest);
+    } else {
+      size_t previous_size = strlen((char*) previous_data);
+      memcpy(buffer->current_buffer, previous_data, previous_size);
+      next_buffer(buffer, previous_size);
+    }
   }
   size_t total_remaining = buffer->buffer_length;
   int result;
   char* current_location = (char*) buffer->current_buffer;
-  char* line_end = NULL;
-  while (true) {
+  while (!line_end) {
     result = connection_receive(connection, current_location,
                                 total_remaining);
     if (result < 0) {
@@ -29,19 +42,12 @@ char* get_line(ConnectionSocket *connection, bytes previous_data,
       break;
     }
     total_remaining -= result;
-    char last_char = '\0';
-    for (char* c = current_location; c < current_location + result; c++) {
-      if (*c == '\n' && last_char == '\r') {
-        // Reached the end of the line
-        line_end = c;
-        break;
-      }
-      last_char = *c;
-    }
+    line_end = strstr(current_location, "\r\n");
     if (line_end) {
       size_t amount_used = line_end - current_location;
-      *(line_end - 1) = '\0';
-      memcpy(remaining_data, line_end, result - amount_used);
+      *line_end = '\0';
+      memcpy(remaining_data, line_end + 2, result - amount_used - 1);
+      remaining_data[result - amount_used - 1] = '\0';
       next_buffer(buffer, amount_used);
       break;
     }
@@ -56,6 +62,7 @@ char* get_line(ConnectionSocket *connection, bytes previous_data,
     return (char*) combine_buffers(buffer, true);
   } else {
     free_buffer(buffer);
+    fprintf(stderr, "Error: invalid line\n");
     return NULL;
   }
 }
@@ -66,10 +73,14 @@ MethodType string_to_methodtype(const char* method_name) {
       return i;
     }
   }
+  fprintf(stderr, "INVALID METHOD: %s\n", method_name);
   return INVALID;
 }
 
 const char* methodtype_to_string(MethodType method) {
+  if (method == INVALID) {
+    return "INVALID";
+  }
   return MethodTypeStrings[method];
 }
 
@@ -89,8 +100,10 @@ bool has_scheme(const char* uri_string) {
 
 const char* get_scheme(const char* uri_string, URI* uri) {
   char* scheme_end = strstr(uri_string, "://");
-  if (scheme_end)
-    return string_slice(uri_string, NULL, scheme_end);
+  if (scheme_end) {
+    uri->scheme = string_slice(uri_string, NULL, scheme_end);
+    return string_slice(uri_string, scheme_end, NULL);
+  }
   return NULL;
 }
 
@@ -160,7 +173,7 @@ char* get_relative(const char* uri_string, URI* uri) {
   memcpy(path_string, uri_string, path_length);
   uri->path = new_path();
   get_path(path_string, uri->path);
-  return 1;
+  return path_string;
 }
 
 int get_uri(const char* uri_string, URI* uri, MethodType method) {
@@ -219,11 +232,41 @@ int get_version(const char* version_string, Request* request) {
   return 0;
 }
 
+int get_header(char* header_line, HeaderPair* pair) {
+  string_vector halves = split_on(header_line, ":", -1);
+  if (halves.length != 2)
+    return -1;
+  pair->name = get(&halves, 0);
+  for (char* p = pair->name; *p; p++) *p = tolower(*p);
+  pair->value = get(&halves, 1);
+  pair->value = strip_whitespace(pair->value);
+  return 0;
+}
+
+int get_headers(ConnectionSocket *connection, Request* request, char* previous_data) {
+  char* excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(*excess_data));
+  char* line;
+  HeaderCollection* headers = malloc(sizeof(*headers));
+  headers->pairs = new_hpair_vector(0);
+  while (strcmp(line = get_line(connection,
+                                (bytes) previous_data,
+                                (bytes) excess_data), "\r\n") != 0) {
+    printf("%s\n", line);
+    HeaderPair pair;
+    if (get_header(line, &pair) < 0)
+      return -1;
+    append_hpair(&headers->pairs, pair);
+    free(line);
+    excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(*excess_data));
+  }
+  request->headers = headers;
+  return 0;
+}
+
 int receive_request(ConnectionSocket *connection, Request* request) {
   char* excess_data = malloc(HTTP_BUFFER_SIZE * sizeof(*excess_data));
   char* line = get_line(connection, NULL, (bytes) excess_data);
   if (line == NULL) {
-    fprintf(stderr, "Error: invalid line\n");
     return -1;
   }
   string_vector line_components = split_on(line, " ", -1);
@@ -237,7 +280,6 @@ int receive_request(ConnectionSocket *connection, Request* request) {
   char* version_string = get(&line_components, 2);
   MethodType method = string_to_methodtype(method_string);
   if (method == INVALID) {
-    fprintf(stderr, "INVALID METHOD: %d\n", method);
     return -1;
   }
   request->method = method;
@@ -247,8 +289,11 @@ int receive_request(ConnectionSocket *connection, Request* request) {
     return -1;
   }
   if (get_version(version_string, request) < 0) {
-    fprintf(stderr, "Error: problem with version: '%s'", version_string);
     return -1;
   }
+  if (get_headers(connection, request, excess_data) < 0) {
+    return -1;
+  }
+  excess_data = NULL;
   return 0;
 }

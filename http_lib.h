@@ -18,8 +18,7 @@ static const char* MethodTypeStrings[] = {
   [DELETE] = "DELETE",
   [CONNECT] = "CONNECT",
   [OPTIONS] = "OPTIONS",
-  [TRACE] = "TRACE",
-  [INVALID]= "INVALID"
+  [TRACE] = "TRACE"
 };
 const size_t num_method_types;
 
